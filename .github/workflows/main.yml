@@ -1,45 +1,46 @@
-name: Hermes Bot Premium 24/7
+name: Hermes_Premium_Bot
 
 on:
   push:
     branches: [ main ]
   schedule:
-    - cron: "0 */3 * * *"   # Restart every 3 hours
-  workflow_dispatch:
+    - cron: "0 */3 * * *" # প্রতি ৩ ঘণ্টা পরপর বটকে ফ্রেশ ভাবে রিস্টার্ট করবে
+  workflow_dispatch: # ম্যানুয়ালি স্টার্ট করার জন্য
 
 jobs:
-  run-bot:
+  build:
     runs-on: ubuntu-latest
+    
+    # এটি নিশ্চিত করবে যে একই সাথে দুটি বট রান হবে না
     concurrency:
-      group: hermes-bot-prod
+      group: bot-running
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Install Dependencies
         run: |
-          pip install --upgrade pip
-          pip install pyTelegramBotAPI pymongo dnspython requests
+          python -m pip install --upgrade pip
+          pip install pyTelegramBotAPI pymongo dnspython
+          # hbctool ডিপেন্ডেন্সি ফিক্স
+          pip install setuptools wheel
           if [ -f "hbctool-0.1.5-96-py3-none-any.whl" ]; then
             pip install hbctool-0.1.5-96-py3-none-any.whl
           else
             pip install hbctool
           fi
 
-      - name: Start Bot & Keep Alive
+      - name: Run Bot with Auto-Timeout
+        env:
+          PYTHONUNBUFFERED: 1
         run: |
-          echo "🚀 Starting Hermes Bot..."
-          nohup python bot.py > bot.log 2>&1 &
-          sleep 5
-          if ! pgrep -f "python bot.py" > /dev/null; then
-            echo "❌ Bot failed to start!"
-            exit 1
-          fi
-          echo "✅ Bot is running in background."
-          tail -f /dev/null
+          # ৬ ঘণ্টা (২১৬০০ সেকেন্ড) পর গিটহাব অ্যাকশন অটো বন্ধ হয়, আমরা ৫.৫ ঘণ্টায় সেফলি বন্ধ করবো
+          timeout 19800s python bot.py || echo "Restarting for next cycle..."
