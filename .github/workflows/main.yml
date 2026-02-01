@@ -1,46 +1,44 @@
-name: Hermes_Premium_Bot
+name: Hermes_Premium_Bot_24_7
 
 on:
   push:
     branches: [ main ]
   schedule:
-    - cron: "0 */3 * * *" # প্রতি ৩ ঘণ্টা পরপর বটকে ফ্রেশ ভাবে রিস্টার্ট করবে
-  workflow_dispatch: # ম্যানুয়ালি স্টার্ট করার জন্য
+    - cron: "0 */4 * * *" # প্রতি ৪ ঘণ্টা পর অটো রিস্টার্ট
+  workflow_dispatch:
 
 jobs:
-  build:
+  run-bot:
     runs-on: ubuntu-latest
-    
-    # এটি নিশ্চিত করবে যে একই সাথে দুটি বট রান হবে না
     concurrency:
-      group: bot-running
-      cancel-in-progress: true
+      group: hermes-engine
+      cancel-in-progress: true # ডুপ্লিকেট রান বন্ধ করবে
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9'
           cache: 'pip'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
-          python -m pip install --upgrade pip
+          sudo apt-get update
+          sudo apt-get install -y zip unzip
+
+      - name: Install Python Packages
+        run: |
           pip install pyTelegramBotAPI pymongo dnspython
-          # hbctool ডিপেন্ডেন্সি ফিক্স
-          pip install setuptools wheel
           if [ -f "hbctool-0.1.5-96-py3-none-any.whl" ]; then
             pip install hbctool-0.1.5-96-py3-none-any.whl
           else
             pip install hbctool
           fi
 
-      - name: Run Bot with Auto-Timeout
+      - name: Launch Hermes Engine
         env:
           PYTHONUNBUFFERED: 1
-        run: |
-          # ৬ ঘণ্টা (২১৬০০ সেকেন্ড) পর গিটহাব অ্যাকশন অটো বন্ধ হয়, আমরা ৫.৫ ঘণ্টায় সেফলি বন্ধ করবো
-          timeout 19800s python bot.py || echo "Restarting for next cycle..."
+        # ৫ ঘণ্টা ৫০ মিনিট পর স্ক্রিপ্টটি অটো টাইমআউট হবে যাতে গিটহাব একশন ফেইল না করে
+        run: timeout 21000s python bot.py || echo "Restarting cycle..."
