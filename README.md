@@ -1,2 +1,2 @@
-# HermesEngineDUModZ-Bot
-ᗪᗩᖇᛕ ᑌᑎᛕᗯᗝᑎ ᗰᗝᗪᘔ
+# Hermes-Toolkit-DeN
+Dark Epic Modder
